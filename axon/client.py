@@ -5,6 +5,22 @@ import ipify
 import webbrowser
 import os.path
 
+all_perm = {
+    "FromPort": -1,
+    "IpProtocol": "-1",
+    "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+    "Ipv6Ranges": [{"CidrIpv6": "::/0"}],
+    "ToPort": -1
+}
+
+all_http_perm = {
+    "FromPort": 80,
+    "IpProtocol": "tcp",
+    "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+    "Ipv6Ranges": [{"CidrIpv6": "::/0"}],
+    "ToPort": 80
+}
+
 
 def ensure_log_group(group_name, region):
     """
@@ -31,6 +47,19 @@ def ensure_log_group(group_name, region):
         return
 
 
+def revoke_all_perms(sg):
+    """
+    Revokes all permissions from the SecurityGroup.
+
+    :param sg: The SecurityGroup.
+    """
+    if len(sg.ip_permissions) > 0:
+        sg.revoke_ingress(IpPermissions=sg.ip_permissions)
+
+    if len(sg.ip_permissions_egress) > 0:
+        sg.revoke_egress(IpPermissions=sg.ip_permissions_egress)
+
+
 def ensure_ecs_gress(sg_id, region):
     """
     Rewrites the ingress and egress permissions for the SecurityGroup. All existing ingress and
@@ -43,11 +72,7 @@ def ensure_ecs_gress(sg_id, region):
     ec2 = boto3.resource('ec2', region_name=region)
     sg = ec2.SecurityGroup(sg_id)
 
-    if len(sg.ip_permissions) > 0:
-        sg.revoke_ingress(IpPermissions=sg.ip_permissions)
-
-    if len(sg.ip_permissions_egress) > 0:
-        sg.revoke_egress(IpPermissions=sg.ip_permissions_egress)
+    revoke_all_perms(sg)
 
     ip = ipify.get_ip()
     axon_tcp_perm = {
@@ -55,14 +80,6 @@ def ensure_ecs_gress(sg_id, region):
         "IpProtocol": "tcp",
         "IpRanges": [{"CidrIp": "{}/32".format(ip)}],
         "ToPort": 8080
-    }
-
-    all_perm = {
-        "FromPort": -1,
-        "IpProtocol": "-1",
-        "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
-        "Ipv6Ranges": [{"CidrIpv6": "::/0"}],
-        "ToPort": -1
     }
 
     sg.authorize_egress(IpPermissions=[all_perm])
@@ -81,30 +98,10 @@ def ensure_ec2_gress(sg_id, region):
     ec2 = boto3.resource('ec2', region_name=region)
     sg = ec2.SecurityGroup(sg_id)
 
-    if len(sg.ip_permissions) > 0:
-        sg.revoke_ingress(IpPermissions=sg.ip_permissions)
-
-    if len(sg.ip_permissions_egress) > 0:
-        sg.revoke_egress(IpPermissions=sg.ip_permissions_egress)
-
-    http_perm = {
-        "FromPort": 80,
-        "IpProtocol": "tcp",
-        "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
-        "Ipv6Ranges": [{"CidrIpv6": "::/0"}],
-        "ToPort": 80
-    }
-
-    all_perm = {
-        "FromPort": -1,
-        "IpProtocol": "-1",
-        "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
-        "Ipv6Ranges": [{"CidrIpv6": "::/0"}],
-        "ToPort": -1
-    }
+    revoke_all_perms(sg)
 
     sg.authorize_egress(IpPermissions=[all_perm])
-    sg.authorize_ingress(IpPermissions=[http_perm])
+    sg.authorize_ingress(IpPermissions=[all_http_perm])
 
 
 def get_single_security_group(client, sg_name, desc):
