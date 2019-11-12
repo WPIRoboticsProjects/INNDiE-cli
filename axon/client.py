@@ -377,6 +377,20 @@ def impl_download_model_file(local_file_path, bucket_name, region):
                          local_file_path)
 
 
+def impl_download_training_script(local_script_path, bucket_name, region):
+    """
+    Downloads a training script from S3.
+
+    :param local_script_path: The path to the training script on disk.
+    :param bucket_name: The S3 bucket name.
+    :param region: The region.
+    """
+    client = boto3.client("s3", region_name=region)
+    client.download_file(bucket_name,
+                         "axon-uploaded-training-scripts/" + os.path.basename(local_script_path),
+                         local_script_path)
+
+
 @click.group()
 def cli():
     return
@@ -448,3 +462,11 @@ def upload_model_file(local_file_path, bucket_name, region):
 @click.option("--region", default="us-east-1", help="The region to connect to.")
 def download_model_file(local_file_path, bucket_name, region):
     impl_download_model_file(local_file_path, bucket_name, region)
+
+
+@cli.command()
+@click.argument("local-script-path")
+@click.argument("bucket-name")
+@click.option("--region", default="us-east-1", help="The region to connect to.")
+def download_training_script(local_script_path, bucket_name, region):
+    impl_download_training_script(local_script_path, bucket_name, region)
