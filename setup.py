@@ -16,7 +16,7 @@ setup(
     url="https://github.com/wpilibsuite/axon-cli",
     packages=["axon"],
     python_requires=">=3.6",
-    install_requires=["click", "boto3", "ipify"],
+    install_requires=["click==7.0.0", "boto3==1.9.248", "ipify==1.0.0"],
     entry_points={
         "console_scripts": ["axon=axon.client:cli"]
     },

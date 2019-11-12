@@ -470,7 +470,7 @@ def cli():
     return
 
 
-@cli.command()
+@cli.command(name="start-axon")
 @click.argument("cluster-name")
 @click.argument("task-family")
 @click.option("--revision", default=None,
@@ -487,7 +487,7 @@ def start_axon(cluster_name, task_family, revision, region):
     webbrowser.open("http://{}:8080/axon/dataset".format(ip), 2)
 
 
-@cli.command()
+@cli.command(name="ensure-configuration")
 @click.argument("cluster-name")
 @click.argument("task-family")
 @click.option("--region", default="us-east-1", help="The region to connect to.")
@@ -495,7 +495,7 @@ def ensure_configuration(cluster_name, task_family, region):
     impl_ensure_configuration(cluster_name, task_family, region)
 
 
-@cli.command()
+@cli.command(name="start-task")
 @click.argument("cluster-name")
 @click.argument("task-family")
 @click.option("--revision", default=None,
@@ -514,7 +514,7 @@ def start_task(cluster_name, task_family, revision, region, stop_after):
         print("Started")
 
 
-@cli.command()
+@cli.command(name="stop-task")
 @click.argument("cluster-name")
 @click.argument("task")
 @click.option("--region", default="us-east-1", help="The region to connect to.")
@@ -522,7 +522,7 @@ def stop_task(cluster_name, task, region):
     impl_stop_task(cluster_name, task, region)
 
 
-@cli.command()
+@cli.command(name="get-container-ip")
 @click.argument("cluster-name")
 @click.argument("task")
 @click.option("--region", default="us-east-1", help="The region to connect to.")
@@ -530,7 +530,7 @@ def get_container_ip(cluster_name, task, region):
     print(impl_get_task_ip(cluster_name, task, region))
 
 
-@cli.command()
+@cli.command(name="upload-model-file")
 @click.argument("local-file-path")
 @click.argument("bucket-name")
 @click.option("--region", default="us-east-1", help="The region to connect to.")
@@ -538,7 +538,7 @@ def upload_model_file(local_file_path, bucket_name, region):
     impl_upload_model_file(local_file_path, bucket_name, region)
 
 
-@cli.command()
+@cli.command(name="download-model-file")
 @click.argument("local-file-path")
 @click.argument("bucket-name")
 @click.option("--region", default="us-east-1", help="The region to connect to.")
@@ -546,7 +546,7 @@ def download_model_file(local_file_path, bucket_name, region):
     impl_download_model_file(local_file_path, bucket_name, region)
 
 
-@cli.command()
+@cli.command(name="download-training-script")
 @click.argument("local-script-path")
 @click.argument("bucket-name")
 @click.option("--region", default="us-east-1", help="The region to connect to.")
