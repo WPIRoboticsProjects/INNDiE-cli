@@ -433,8 +433,9 @@ def impl_upload_model_file(local_file_path, bucket_name, region):
     :param region: The region.
     """
     client = boto3.client("s3", region_name=region)
-    client.upload_file(local_file_path, bucket_name,
-                       "axon-uploaded-trained-models/" + os.path.basename(local_file_path))
+    remote_path = "axon-uploaded-trained-models/" + os.path.basename(local_file_path)
+    client.upload_file(local_file_path, bucket_name, remote_path)
+    print("Uploaded to: {}\n".format(remote_path))
 
 
 def impl_download_model_file(local_file_path, bucket_name, region):
@@ -446,9 +447,9 @@ def impl_download_model_file(local_file_path, bucket_name, region):
     :param region: The region.
     """
     client = boto3.client("s3", region_name=region)
-    client.download_file(bucket_name,
-                         "axon-uploaded-trained-models/" + os.path.basename(local_file_path),
-                         local_file_path)
+    remote_path = "axon-uploaded-trained-models/" + os.path.basename(local_file_path)
+    client.download_file(bucket_name, remote_path, local_file_path)
+    print("Downloaded from: {}\n".format(remote_path))
 
 
 def impl_download_training_script(local_script_path, bucket_name, region):
@@ -460,9 +461,9 @@ def impl_download_training_script(local_script_path, bucket_name, region):
     :param region: The region.
     """
     client = boto3.client("s3", region_name=region)
-    client.download_file(bucket_name,
-                         "axon-uploaded-training-scripts/" + os.path.basename(local_script_path),
-                         local_script_path)
+    remote_path = "axon-uploaded-training-scripts/" + os.path.basename(local_script_path)
+    client.download_file(bucket_name, remote_path, local_script_path)
+    print("Downloaded from: {}\n".format(remote_path))
 
 
 @click.group()
