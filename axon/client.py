@@ -517,6 +517,8 @@ def cli():
     return
 
 
+# TODO: Don't set a default value for region in any of these
+
 @cli.command(name="start-axon")
 @click.argument("cluster-name")
 @click.argument("task-family")
