@@ -512,6 +512,20 @@ def impl_download_training_script(local_script_path, bucket_name, region):
     print("Downloaded from: {}\n".format(remote_path))
 
 
+def impl_download_dataset(local_dataset_path, bucket_name, region):
+    """
+    Downloads a dataset from S3.
+
+    :param local_dataset_path: The path to the dataset on disk.
+    :param bucket_name: The S3 bucket name.
+    :param region: The region.
+    """
+    client = boto3.client("s3", region_name=region)
+    remote_path = "axon-uploaded-datasets/" + os.path.basename(local_dataset_path)
+    client.download_file(bucket_name, remote_path, local_dataset_path)
+    print("Downloaded from: {}\n".format(remote_path))
+
+
 @click.group()
 def cli():
     return
@@ -603,3 +617,11 @@ def download_model_file(local_file_path, bucket_name, region):
 @click.option("--region", default="us-east-1", help="The region to connect to.")
 def download_training_script(local_script_path, bucket_name, region):
     impl_download_training_script(local_script_path, bucket_name, region)
+
+
+@cli.command(name="download-dataset")
+@click.argument("local-dataset-path")
+@click.argument("bucket-name")
+@click.option("--region", default="us-east-1", help="The region to connect to.")
+def download_dataset(local_dataset_path, bucket_name, region):
+    impl_download_dataset(local_dataset_path, bucket_name, region)
