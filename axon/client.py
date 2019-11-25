@@ -4,7 +4,6 @@ import boto3
 import ipify
 import webbrowser
 import os.path
-import axon.progress_reporter
 
 all_perm = {
     "FromPort": -1,
@@ -516,6 +515,20 @@ def impl_download_training_script(local_script_path, bucket_name, region):
     print("Downloaded from: {}\n".format(remote_path))
 
 
+def impl_upload_dataset(local_dataset_path, bucket_name, region):
+    """
+    Uploads a dataset to S3.
+
+    :param local_dataset_path: The path to the dataset on disk.
+    :param bucket_name: The S3 bucket name.
+    :param region: The region, or `None` to pull the region from the environment.
+    """
+    client = make_client("s3", region)
+    remote_path = "axon-uploaded-datasets/" + os.path.basename(local_dataset_path)
+    client.upload_file(local_dataset_path, bucket_name, remote_path)
+    print("Uploaded to: {}\n".format(remote_path))
+
+
 def impl_download_dataset(local_dataset_path, bucket_name, region):
     """
     Downloads a dataset from S3.
@@ -629,3 +642,11 @@ def download_training_script(local_script_path, bucket_name, region):
 @click.option("--region", default="us-east-1", help="The region to connect to.")
 def download_dataset(local_dataset_path, bucket_name, region):
     impl_download_dataset(local_dataset_path, bucket_name, region)
+
+
+@cli.command(name="upload-dataset")
+@click.argument("local-dataset-path")
+@click.argument("bucket-name")
+@click.option("--region", default="us-east-1", help="The region to connect to.")
+def upload_dataset(local_dataset_path, bucket_name, region):
+    impl_upload_dataset(local_dataset_path, bucket_name, region)
