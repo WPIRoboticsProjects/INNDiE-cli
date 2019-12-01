@@ -1,4 +1,6 @@
 import json
+import tempfile
+
 import click
 import boto3
 import ipify
@@ -473,74 +475,97 @@ def impl_get_task_ip(cluster_name, task_arn, region):
     return nics[0]["Association"]["PublicIp"]
 
 
-def impl_upload_model_file(local_file_path, bucket_name, region):
+def impl_upload_model_file(model_name, bucket_name, region):
     """
     Uploads a model to S3.
 
-    :param local_file_path: The path to the model file on disk.
+    :param model_name: The filename of the model to upload (must be in the current directory).
     :param bucket_name: The S3 bucket name.
     :param region: The region, or `None` to pull the region from the environment.
     """
     client = make_client("s3", region)
-    remote_path = "axon-uploaded-trained-models/" + os.path.basename(local_file_path)
-    client.upload_file(local_file_path, bucket_name, remote_path)
+    remote_path = "axon-uploaded-trained-models/" + os.path.basename(model_name)
+    client.upload_file(model_name, bucket_name, remote_path)
     print("Uploaded to: {}\n".format(remote_path))
 
 
-def impl_download_model_file(local_file_path, bucket_name, region):
+def impl_download_model_file(model_name, bucket_name, region):
     """
     Downloads a model from S3.
 
-    :param local_file_path: The path to the model file on disk.
+    :param model_name: The filename of the model to download (must be in the current directory).
     :param bucket_name: The S3 bucket name.
     :param region: The region, or `None` to pull the region from the environment.
     """
     client = make_client("s3", region)
-    remote_path = "axon-uploaded-trained-models/" + os.path.basename(local_file_path)
-    client.download_file(bucket_name, remote_path, local_file_path)
+    remote_path = "axon-uploaded-trained-models/" + os.path.basename(model_name)
+    client.download_file(bucket_name, remote_path, model_name)
     print("Downloaded from: {}\n".format(remote_path))
 
 
-def impl_download_training_script(local_script_path, bucket_name, region):
+def impl_download_training_script(script_name, bucket_name, region):
     """
     Downloads a training script from S3.
 
-    :param local_script_path: The path to the training script on disk.
+    :param script_name: The filename of the script to download (must be in the current directory).
     :param bucket_name: The S3 bucket name.
     :param region: The region, or `None` to pull the region from the environment.
     """
     client = make_client("s3", region)
-    remote_path = "axon-uploaded-training-scripts/" + os.path.basename(local_script_path)
-    client.download_file(bucket_name, remote_path, local_script_path)
+    remote_path = "axon-uploaded-training-scripts/" + os.path.basename(script_name)
+    client.download_file(bucket_name, remote_path, script_name)
     print("Downloaded from: {}\n".format(remote_path))
 
 
-def impl_upload_dataset(local_dataset_path, bucket_name, region):
+def impl_upload_dataset(dataset_name, bucket_name, region):
     """
     Uploads a dataset to S3.
 
-    :param local_dataset_path: The path to the dataset on disk.
+    :param dataset_name: The filename of the dataset to upload (must be in the current directory).
     :param bucket_name: The S3 bucket name.
     :param region: The region, or `None` to pull the region from the environment.
     """
     client = make_client("s3", region)
-    remote_path = "axon-uploaded-datasets/" + os.path.basename(local_dataset_path)
-    client.upload_file(local_dataset_path, bucket_name, remote_path)
+    remote_path = "axon-uploaded-datasets/" + os.path.basename(dataset_name)
+    client.upload_file(dataset_name, bucket_name, remote_path)
     print("Uploaded to: {}\n".format(remote_path))
 
 
-def impl_download_dataset(local_dataset_path, bucket_name, region):
+def impl_download_dataset(dataset_name, bucket_name, region):
     """
     Downloads a dataset from S3.
 
-    :param local_dataset_path: The path to the dataset on disk.
+    :param dataset_name: The filename of the dataset to download (must be in the current directory).
     :param bucket_name: The S3 bucket name.
     :param region: The region, or `None` to pull the region from the environment.
     """
     client = make_client("s3", region)
-    remote_path = "axon-uploaded-datasets/" + os.path.basename(local_dataset_path)
-    client.download_file(bucket_name, remote_path, local_dataset_path)
+    remote_path = "axon-uploaded-datasets/" + os.path.basename(dataset_name)
+    client.download_file(bucket_name, remote_path, dataset_name)
     print("Downloaded from: {}\n".format(remote_path))
+
+
+def impl_update_training_progress(model_name, dataset_name, progress_text, bucket_name, region):
+    """
+    Updates the training progress in S3 for a model specified by its name.
+
+    :param model_name: The filename of the model.
+    :param dataset_name: The filename of the dataset.
+    :param progress_text: The text to write into the progress file.
+    :param bucket_name: The S3 bucket name.
+    :param region: The region, or `None` to pull the region from the environment.
+    """
+    local_file, path = tempfile.mkstemp()
+    try:
+        with open(local_file, "w") as f:
+            f.write(progress_text)
+        client = make_client("s3", region)
+        remote_path = "axon-training-progress/" + os.path.basename(model_name) + "/" + \
+                      os.path.basename(dataset_name) + "/progress.txt"
+        client.upload_file(path, bucket_name, remote_path)
+        print("Updated progress in: {}\n".format(remote_path))
+    finally:
+        os.remove(path)
 
 
 @click.group()
@@ -613,40 +638,50 @@ def get_container_ip(cluster_name, task, region):
 
 
 @cli.command(name="upload-model-file")
-@click.argument("local-file-path")
+@click.argument("model-name")
 @click.argument("bucket-name")
 @click.option("--region", default="us-east-1", help="The region to connect to.")
-def upload_model_file(local_file_path, bucket_name, region):
-    impl_upload_model_file(local_file_path, bucket_name, region)
+def upload_model_file(model_name, bucket_name, region):
+    impl_upload_model_file(model_name, bucket_name, region)
 
 
 @cli.command(name="download-model-file")
-@click.argument("local-file-path")
+@click.argument("model-name")
 @click.argument("bucket-name")
 @click.option("--region", default="us-east-1", help="The region to connect to.")
-def download_model_file(local_file_path, bucket_name, region):
-    impl_download_model_file(local_file_path, bucket_name, region)
+def download_model_file(model_name, bucket_name, region):
+    impl_download_model_file(model_name, bucket_name, region)
 
 
 @cli.command(name="download-training-script")
-@click.argument("local-script-path")
+@click.argument("script-name")
 @click.argument("bucket-name")
 @click.option("--region", default="us-east-1", help="The region to connect to.")
-def download_training_script(local_script_path, bucket_name, region):
-    impl_download_training_script(local_script_path, bucket_name, region)
+def download_training_script(script_name, bucket_name, region):
+    impl_download_training_script(script_name, bucket_name, region)
 
 
 @cli.command(name="download-dataset")
-@click.argument("local-dataset-path")
+@click.argument("dataset-name")
 @click.argument("bucket-name")
 @click.option("--region", default="us-east-1", help="The region to connect to.")
-def download_dataset(local_dataset_path, bucket_name, region):
-    impl_download_dataset(local_dataset_path, bucket_name, region)
+def download_dataset(dataset_name, bucket_name, region):
+    impl_download_dataset(dataset_name, bucket_name, region)
 
 
 @cli.command(name="upload-dataset")
-@click.argument("local-dataset-path")
+@click.argument("dataset-name")
 @click.argument("bucket-name")
 @click.option("--region", default="us-east-1", help="The region to connect to.")
-def upload_dataset(local_dataset_path, bucket_name, region):
-    impl_upload_dataset(local_dataset_path, bucket_name, region)
+def upload_dataset(dataset_name, bucket_name, region):
+    impl_upload_dataset(dataset_name, bucket_name, region)
+
+
+@cli.command(name="update-training-progress")
+@click.argument("model-name")
+@click.argument("dataset-name")
+@click.argument("progress-text")
+@click.argument("bucket-name")
+@click.option("--region", default="us-east-1", help="The region to connect to.")
+def update_training_progress(model_name, dataset_name, progress_text, bucket_name, region):
+    impl_update_training_progress(model_name, dataset_name, progress_text, bucket_name, region)
