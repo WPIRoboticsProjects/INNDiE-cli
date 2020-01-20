@@ -577,32 +577,60 @@ def impl_get_task_ip(cluster_name, task_arn, region):
     return nics[0]["Association"]["PublicIp"]
 
 
-def impl_upload_model_file(model_name, bucket_name, region):
+def impl_upload_untrained_model_file(model_path, bucket_name, region):
     """
-    Uploads a model to S3.
+    Uploads an untrained model to S3.
 
-    :param model_name: The filename of the model to upload (must be in the current directory).
+    :param model_path: The file path to the model to upload, ending with the name of the model.
     :param bucket_name: The S3 bucket name.
     :param region: The region, or `None` to pull the region from the environment.
     """
     client = make_client("s3", region)
-    remote_path = "axon-uploaded-trained-models/" + os.path.basename(model_name)
-    client.upload_file(model_name, bucket_name, remote_path)
-    print("Uploaded to: {}\n".format(remote_path))
+    key = "axon-untrained-models/" + os.path.basename(model_path)
+    client.upload_file(model_path, bucket_name, key)
+    print("Uploaded to: {}\n".format(key))
 
 
-def impl_download_model_file(model_name, bucket_name, region):
+def impl_download_untrained_model_file(model_path, bucket_name, region):
     """
-    Downloads a model from S3.
+    Downloads an untrained model from S3.
 
-    :param model_name: The filename of the model to download (must be in the current directory).
+    :param model_path: The file path to download to, ending with the name of the model.
     :param bucket_name: The S3 bucket name.
     :param region: The region, or `None` to pull the region from the environment.
     """
     client = make_client("s3", region)
-    remote_path = "axon-uploaded-trained-models/" + os.path.basename(model_name)
-    client.download_file(bucket_name, remote_path, model_name)
-    print("Downloaded from: {}\n".format(remote_path))
+    key = "axon-untrained-models/" + os.path.basename(model_path)
+    client.download_file(bucket_name, key, model_path)
+    print("Downloaded from: {}\n".format(key))
+
+
+def impl_upload_trained_model_file(model_path, bucket_name, region):
+    """
+    Uploads an trained model to S3.
+
+    :param model_path: The file path to the model to upload, ending with the name of the model.
+    :param bucket_name: The S3 bucket name.
+    :param region: The region, or `None` to pull the region from the environment.
+    """
+    client = make_client("s3", region)
+    key = "axon-trained-models/" + os.path.basename(model_path)
+    client.upload_file(model_path, bucket_name, key)
+    print("Uploaded to: {}\n".format(key))
+
+
+def impl_download_trained_model_file(model_path, bucket_name, region):
+    """
+    Downloads an trained model from S3.
+
+    :param model_path: The file path to download to, ending with the name of the model.
+    :param bucket_name: The S3 bucket name.
+    :param region: The region, or `None` to pull the region from the environment.
+    """
+    client = make_client("s3", region)
+    key = "axon-trained-models/" + os.path.basename(model_path)
+    client.download_file(bucket_name, key, model_path)
+    print("Downloaded from: {}\n".format(key))
 
 
 def impl_download_training_script(script_name, bucket_name, region):
@@ -614,7 +642,7 @@ def impl_download_training_script(script_name, bucket_name, region):
     :param region: The region, or `None` to pull the region from the environment.
     """
     client = make_client("s3", region)
-    remote_path = "axon-uploaded-training-scripts/" + os.path.basename(script_name)
+    remote_path = "axon-training-scripts/" + os.path.basename(script_name)
     client.download_file(bucket_name, remote_path, script_name)
     print("Downloaded from: {}\n".format(remote_path))
 
@@ -682,7 +710,7 @@ def cli():
 @click.argument("task-family")
 @click.option("--revision", default=None,
               help="The revision of the task. Set to None to use the latest revision.")
-@click.option("--region", default="us-east-1", help="The region to connect to.")
+@click.option("--region", help="The region to connect to.")
 def start_axon(cluster_name, task_family, revision, region):
     impl_ensure_configuration(cluster_name, task_family, region)
     task_arn = impl_start_task(cluster_name, task_family, revision, region)
@@ -698,7 +726,7 @@ def start_axon(cluster_name, task_family, revision, region):
 @cli.command(name="ensure-configuration")
 @click.argument("cluster-name")
 @click.argument("task-family")
-@click.option("--region", default="us-east-1", help="The region to connect to.")
+@click.option("--region", help="The region to connect to.")
 def ensure_configuration(cluster_name, task_family, region):
     impl_ensure_configuration(cluster_name, task_family, region)
 
@@ -708,7 +736,7 @@ def ensure_configuration(cluster_name, task_family, region):
 @click.argument("task-family")
 @click.option("--revision", default=None,
               help="The revision of the task. Set to None to use the latest revision.")
-@click.option("--region", default="us-east-1", help="The region to connect to.")
+@click.option("--region", help="The region to connect to.")
 @click.option("--stop-after/--no-stop-after", default=False,
               help="Whether to stop the task immediately after creating it.")
 def start_task(cluster_name, task_family, revision, region, stop_after):
@@ -726,7 +754,7 @@ def start_task(cluster_name, task_family, revision, region, stop_after):
 @cli.command(name="stop-task")
 @click.argument("cluster-name")
 @click.argument("task")
-@click.option("--region", default="us-east-1", help="The region to connect to.")
+@click.option("--region", help="The region to connect to.")
 def stop_task(cluster_name, task, region):
     impl_stop_task(cluster_name, task, region)
 
@@ -734,31 +762,47 @@ def stop_task(cluster_name, task, region):
 @cli.command(name="get-container-ip")
 @click.argument("cluster-name")
 @click.argument("task")
-@click.option("--region", default="us-east-1", help="The region to connect to.")
+@click.option("--region", help="The region to connect to.")
 def get_container_ip(cluster_name, task, region):
     print(impl_get_task_ip(cluster_name, task, region))
 
 
-@cli.command(name="upload-model-file")
+@cli.command(name="upload-untrained-model-file")
 @click.argument("model-name")
 @click.argument("bucket-name")
-@click.option("--region", default="us-east-1", help="The region to connect to.")
-def upload_model_file(model_name, bucket_name, region):
-    impl_upload_model_file(model_name, bucket_name, region)
+@click.option("--region", help="The region to connect to.")
+def upload_untrained_model_file(model_name, bucket_name, region):
+    impl_upload_untrained_model_file(model_name, bucket_name, region)
 
 
-@cli.command(name="download-model-file")
+@cli.command(name="download-untrained-model-file")
 @click.argument("model-name")
 @click.argument("bucket-name")
-@click.option("--region", default="us-east-1", help="The region to connect to.")
-def download_model_file(model_name, bucket_name, region):
-    impl_download_model_file(model_name, bucket_name, region)
+@click.option("--region", help="The region to connect to.")
+def download_untrained_model_file(model_name, bucket_name, region):
+    impl_download_untrained_model_file(model_name, bucket_name, region)
+
+
+@cli.command(name="upload-trained-model-file")
+@click.argument("model-name")
+@click.argument("bucket-name")
+@click.option("--region", help="The region to connect to.")
+def upload_trained_model_file(model_name, bucket_name, region):
+    impl_upload_trained_model_file(model_name, bucket_name, region)
+
+
+@cli.command(name="download-trained-model-file")
+@click.argument("model-name")
+@click.argument("bucket-name")
+@click.option("--region", help="The region to connect to.")
+def download_trained_model_file(model_name, bucket_name, region):
+    impl_download_trained_model_file(model_name, bucket_name, region)
 
 
 @cli.command(name="download-training-script")
 @click.argument("script-name")
 @click.argument("bucket-name")
-@click.option("--region", default="us-east-1", help="The region to connect to.")
+@click.option("--region", help="The region to connect to.")
 def download_training_script(script_name, bucket_name, region):
     impl_download_training_script(script_name, bucket_name, region)
 
@@ -766,7 +810,7 @@ def download_training_script(script_name, bucket_name, region):
 @cli.command(name="download-dataset")
 @click.argument("dataset-name")
 @click.argument("bucket-name")
-@click.option("--region", default="us-east-1", help="The region to connect to.")
+@click.option("--region", help="The region to connect to.")
 def download_dataset(dataset_name, bucket_name, region):
     impl_download_dataset(dataset_name, bucket_name, region)
 
@@ -774,7 +818,7 @@ def download_dataset(dataset_name, bucket_name, region):
 @cli.command(name="upload-dataset")
 @click.argument("dataset-name")
 @click.argument("bucket-name")
-@click.option("--region", default="us-east-1", help="The region to connect to.")
+@click.option("--region", help="The region to connect to.")
 def upload_dataset(dataset_name, bucket_name, region):
     impl_upload_dataset(dataset_name, bucket_name, region)
 
@@ -784,6 +828,6 @@ def upload_dataset(dataset_name, bucket_name, region):
 @click.argument("dataset-name")
 @click.argument("progress-text")
 @click.argument("bucket-name")
-@click.option("--region", default="us-east-1", help="The region to connect to.")
+@click.option("--region", help="The region to connect to.")
 def update_training_progress(model_name, dataset_name, progress_text, bucket_name, region):
     impl_update_training_progress(model_name, dataset_name, progress_text, bucket_name, region)
