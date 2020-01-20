@@ -9,7 +9,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name="axon",
-    version="0.1.8",
+    version="0.1.9",
     description="The Axon CLI",
     long_description=long_description,
     long_description_content_type="text/markdown",
