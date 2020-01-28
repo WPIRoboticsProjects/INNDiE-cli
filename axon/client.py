@@ -674,12 +674,11 @@ def impl_download_dataset(dataset_path, bucket_name, region):
     print("Downloaded from: {}\n".format(key))
 
 
-def impl_update_training_progress(model_name, dataset_name, progress_text, bucket_name, region):
+def impl_update_training_progress(job_id, progress_text, bucket_name, region):
     """
     Updates the training progress in S3 for a model specified by its name.
 
-    :param model_name: The filename of the model.
-    :param dataset_name: The filename of the dataset.
+    :param job_id: The unique Job ID.
     :param progress_text: The text to write into the progress file.
     :param bucket_name: The S3 bucket name.
     :param region: The region, or `None` to pull the region from the environment.
@@ -689,46 +688,43 @@ def impl_update_training_progress(model_name, dataset_name, progress_text, bucke
         with open(local_file, "w") as f:
             f.write(progress_text)
         client = make_client("s3", region)
-        remote_path = create_progress_prefix(model_name, dataset_name) + "/progress.txt"
+        remote_path = create_progress_prefix(job_id) + "/progress.txt"
         client.upload_file(path, bucket_name, remote_path)
         print("Updated progress in: {}\n".format(remote_path))
     finally:
         os.remove(path)
 
 
-def impl_create_heartbeat(model_name, dataset_name, bucket_name, region):
+def impl_create_heartbeat(job_id, bucket_name, region):
     """
     Creates a heartbeat that Axon uses to check if the training script is running properly.
 
-    :param model_name: The filename of the model.
-    :param dataset_name: The filename of the dataset.
+    :param job_id: The unique Job ID.
     :param bucket_name: The S3 bucket name.
     :param region: The region, or `None` to pull the region from the environment.
     """
     client = make_client("s3", region)
-    remote_path = create_progress_prefix(model_name, dataset_name) + "/heartbeat.txt"
+    remote_path = create_progress_prefix(job_id) + "/heartbeat.txt"
     client.put_object(Body="1", Bucket=bucket_name, Key=remote_path)
     print("Created heartbeat file in: {}\n".format(remote_path))
 
 
-def impl_remove_heartbeat(model_name, dataset_name, bucket_name, region):
+def impl_remove_heartbeat(job_id, bucket_name, region):
     """
     Removes a heartbeat that Axon uses to check if the training script is running properly.
 
-    :param model_name: The filename of the model.
-    :param dataset_name: The filename of the dataset.
+    :param job_id: The unique Job ID.
     :param bucket_name: The S3 bucket name.
     :param region: The region, or `None` to pull the region from the environment.
     """
     client = make_client("s3", region)
-    remote_path = create_progress_prefix(model_name, dataset_name) + "/heartbeat.txt"
+    remote_path = create_progress_prefix(job_id) + "/heartbeat.txt"
     client.put_object(Body="0", Bucket=bucket_name, Key=remote_path)
     print("Removed heartbeat file in: {}\n".format(remote_path))
 
 
-def create_progress_prefix(model_name, dataset_name):
-    return "axon-training-progress/" + os.path.basename(model_name) + "/" + \
-           os.path.basename(dataset_name)
+def create_progress_prefix(job_id):
+    return "axon-training-progress/" + job_id
 
 
 @click.group()
@@ -918,53 +914,44 @@ def download_dataset(dataset_path, region):
 
 
 @cli.command(name="update-training-progress")
-@click.argument("model-name")
-@click.argument("dataset-name")
+@click.argument("job-id")
 @click.argument("progress-text")
 @click.option("--region", help="The region to connect to.",
               type=click.Choice(region_choices))
-def update_training_progress(model_name, dataset_name, progress_text, region):
+def update_training_progress(job_id, progress_text, region):
     """
     Updates the training progress. Meant to be used while a training script is running to provide
     progress updates to Axon.
 
-    MODEL_NAME The filename of the model currently being trained.
-
-    DATASET_NAME The name of the dataset currently being trained on.
+    JOB_ID The unique Job ID.
 
     PROGRESS_TEXT The text to write to the progress file.
     """
-    impl_update_training_progress(model_name, dataset_name, progress_text, ensure_s3_bucket(region),
+    impl_update_training_progress(job_id, progress_text, ensure_s3_bucket(region),
                                   region)
 
 
 @cli.command(name="create-heartbeat")
-@click.argument("model-name")
-@click.argument("dataset-name")
+@click.argument("job-id")
 @click.option("--region", help="The region to connect to.",
               type=click.Choice(region_choices))
-def create_heartbeat(model_name, dataset_name, region):
+def create_heartbeat(job_id, region):
     """
     Creates a heartbeat that Axon uses to check if the training script is running properly.
 
-    MODEL_NAME The filename of the model currently being trained.
-
-    DATASET_NAME The name of the dataset currently being trained on.
+    JOB_ID The unique Job ID.
     """
-    impl_create_heartbeat(model_name, dataset_name, ensure_s3_bucket(region), region)
+    impl_create_heartbeat(job_id, ensure_s3_bucket(region), region)
 
 
 @cli.command(name="remove-heartbeat")
-@click.argument("model-name")
-@click.argument("dataset-name")
+@click.argument("job-id")
 @click.option("--region", help="The region to connect to.",
               type=click.Choice(region_choices))
-def remove_heartbeat(model_name, dataset_name, region):
+def remove_heartbeat(job_id, region):
     """
     Removes a heartbeat that Axon uses to check if the training script is running properly.
 
-    MODEL_NAME The filename of the model currently being trained.
-
-    DATASET_NAME The name of the dataset currently being trained on.
+    JOB_ID The unique Job ID.
     """
-    impl_remove_heartbeat(model_name, dataset_name, ensure_s3_bucket(region), region)
+    impl_remove_heartbeat(job_id, ensure_s3_bucket(region), region)
