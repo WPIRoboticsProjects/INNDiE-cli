@@ -724,7 +724,7 @@ def impl_remove_heartbeat(job_id, bucket_name, region):
 
 
 def create_progress_prefix(job_id):
-    return "axon-training-progress/" + job_id
+    return "axon-training-progress/{}".format(job_id)
 
 
 @click.group()
