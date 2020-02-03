@@ -695,6 +695,22 @@ def impl_remove_heartbeat(job_id, bucket_name, region):
     print("Removed heartbeat file in: {}\n".format(remote_path))
 
 
+def impl_set_training_log_file(job_id, log_file, bucket_name, region):
+    """
+    Sets the training log file contents to the contents of the log file.
+
+    :param job_id: The unique Job ID.
+    :param log_file: The log file to read from.
+    :param bucket_name: The S3 bucket name.
+    :param region: The region, or `None` to pull the region from the environment.
+    """
+    client = make_client("s3", region)
+    remote_path = create_progress_prefix(job_id) + "/log.txt"
+    with open(log_file, "r") as f:
+        client.put_object(Body=f.read(), Bucket=bucket_name, Key=remote_path)
+        print("Set training log file in: {}\n".format(remote_path))
+
+
 def impl_upload_training_results(job_id, output_dir, bucket_name, region):
     client = make_client("s3", region)
     files_to_upload = [os.path.join(output_dir, it) for it in os.listdir(output_dir)]
@@ -911,6 +927,22 @@ def remove_heartbeat(job_id, region):
     JOB_ID The unique Job ID.
     """
     impl_remove_heartbeat(job_id, ensure_s3_bucket(region), region)
+
+
+@cli.command(name="set-training-log-file")
+@click.argument("job-id")
+@click.argument("log-file")
+@click.option("--region", help="The region to connect to.",
+              type=click.Choice(region_choices))
+def set_training_log_file(job_id, log_file, region):
+    """
+    Sets the training log file contents to the contents of the log file.
+
+    JOB_ID The unique Job ID.
+
+    LOG_FILE The log file to read from.
+    """
+    impl_set_training_log_file(job_id, log_file, ensure_s3_bucket(region), region)
 
 
 @cli.command(name="upload-training-results")
