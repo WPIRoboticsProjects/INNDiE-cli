@@ -716,9 +716,15 @@ def impl_upload_training_results(job_id, output_dir, bucket_name, region):
     files_to_upload = [os.path.join(output_dir, it) for it in os.listdir(output_dir)]
     files_to_upload = [it for it in files_to_upload if os.path.isfile(it)]
     for elem in files_to_upload:
-        key = "axon-training-results/{}/{}".format(job_id, os.path.basename(elem))
-        client.upload_file(elem, bucket_name, key)
-        print("Uploaded to: {}\n".format(key))
+        ext = os.path.splitext(elem)[1].lower()
+        # Upload model files to the model prefix instead of the test result prefix so that users
+        # can select them as models to start new Jobs with.
+        if ext == ".h5" or ext == ".hdf5":
+            impl_upload_model(os.path.abspath(elem), bucket_name, region)
+        else:
+            key = "axon-training-results/{}/{}".format(job_id, os.path.basename(elem))
+            client.upload_file(elem, bucket_name, key)
+            print("Uploaded to: {}\n".format(key))
 
 
 def create_progress_prefix(job_id):
