@@ -8,20 +8,20 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name="axon",
+    name="inndie",
     version="0.1.17",
-    description="The Axon CLI",
+    description="The INNDiE CLI",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/wpilibsuite/axon-cli",
-    packages=["axon"],
+    url="https://github.com/wpilibsuite/INNDiE-cli",
+    packages=["inndie"],
     python_requires=">=3.6",
-    install_requires=["click==7.0.0", "boto3==1.9.248", "ipify==1.0.0"],
+    install_requires=["click==7.0.0", "boto3==1.9.248"],
     entry_points={
-        "console_scripts": ["axon=axon.client:cli"]
+        "console_scripts": ["inndie=inndie.client:cli"]
     },
     project_urls={
-        "Bug Reports": "https://github.com/wpilibsuite/axon-cli/issues",
-        "Source": "https://github.com/wpilibsuite/axon-cli"
+        "Bug Reports": "https://github.com/wpilibsuite/INNDiE-cli/issues",
+        "Source": "https://github.com/wpilibsuite/INNDiE-cli"
     }
 )
